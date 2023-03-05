@@ -1,4 +1,3 @@
-(use-modules (ice-9 pretty-print))
 (define (inc n) (+ n 1))
 (define (dec n) (- n 1))
 ;; like in javascript
@@ -71,30 +70,22 @@
   (let ((lns (live-neighbors board x y))
         (live? (= 1 (get-cell board x y))))
     (if live?
-        (if (or (= 2 lns) (= 3 lns))
-            1
-            0)
-        (if (= 3 lns)
-            1
-            0))))
+        (if (or (= 2 lns) (= 3 lns)) 1 0)
+        (if (= 3 lns) 1 0))))
 
+;; next step in game
 (define (generate board)
-  (enumerate
-   (lambda (x row)
-     (enumerate
-      (lambda (y col)
-        (rules board x y))
-      row))
-   board))
+  (enumerate (lambda (x row) (enumerate (lambda (y col) (rules board x y)) row)) board))
 
-(define* (play board #:key (depth 0) (usecs 100000))
+;; play until dead
+(define* (play board #:key (depth 0) (msecs 300000))
   (print-board board)
-  (usleep usecs)
+  (usleep (* 1000 msecs))
   (let ((next (generate board)))
     (if (equal? board next)
         (cons depth board)
-        (play (generate board) #:depth (inc depth)))))
+        (play (generate board) #:depth (inc depth) #:msecs msecs))))
 
-
-(define (build-random-board w h)
-  (catimes h (lambda () (catimes w (lambda () (random 2))))))
+;; build board of width height and optional percentage chance of true
+(define* (build-random-board w h #:key (weight 33))
+  (catimes h (lambda () (catimes w (lambda () (if (> weight (random 100)) 1 0))))))
