@@ -1,4 +1,20 @@
+(use-modules (ice-9 pretty-print))
 (define (inc n) (+ n 1))
+(define (dec n) (- n 1))
+;; like in javascript
+(define (enumerate proc seq)
+  (map proc (range 0 (length seq)) seq) )
+(define (catimes n proc)
+  (map (lambda (i) (proc)) (range 0 n)))
+(define (dotimes n proc)
+  (when (not (= n 0))
+    (proc)
+    (dotimes (dec n) proc)))
+;; NOTE dont try this at home
+(define (str x)
+  (cond ((number? x) (number->string x))
+        ((list? x) (list->string x))
+        (else x)))
 (define (nth n l)
   (if (or (> n (length l)) (< n 0))
     (error "Index out of bounds.")
@@ -22,7 +38,10 @@
                      "X")))
       row)
      (newline))
-   board))
+   board)
+  (dotimes (length (car board))
+           (lambda () (display "-")))
+  (newline))
 
 (define (get-cell board x y)
   (cond ((or (< x 0) (<= (length board) x)) 0)
@@ -32,10 +51,10 @@
 (define (neighbors board x y)
   (map
    (lambda (coords)
-     ;; (display coords)
      (get-cell board
                (+ x (car coords))
                (+ y (cadr coords))))
+   ;; surrounding cells
    '((-1 -1)
      (-1 0)
      (-1 1)
@@ -60,32 +79,22 @@
             0))))
 
 (define (generate board)
-  (map
+  (enumerate
    (lambda (x row)
-     (map
+     (enumerate
       (lambda (y col)
         (rules board x y))
-      (range 0 (length row))
       row))
-   (range 0 (length board))
    board))
 
-(define (play board)
-  (sleep 1)
+(define* (play board #:key (depth 0) (usecs 100000))
   (print-board board)
-  (newline)
+  (usleep usecs)
   (let ((next (generate board)))
     (if (equal? board next)
-        "DEAD"
-        (play (generate board)))))
+        (cons depth board)
+        (play (generate board) #:depth (inc depth)))))
 
 
-(define start '((0 0 0 0 0 0 0 0 0)
-                (0 0 0 0 0 0 0 0 0)
-                (0 0 0 0 0 1 0 0 0)
-                (0 0 0 0 1 0 0 0 0)
-                (0 0 0 0 1 0 0 0 0)
-                (0 0 0 0 0 1 0 0 0)
-                (0 0 0 0 0 0 0 0 0)
-                (0 0 0 0 0 0 0 0 0)
-                (0 0 0 0 0 0 0 0 0)))
+(define (build-random-board w h)
+  (catimes h (lambda () (catimes w (lambda () (random 2))))))
